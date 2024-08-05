@@ -1,0 +1,116 @@
+//ESP Mini-Pro D1 2 buttons
+
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+#include "secrets.h" // Include the secrets header file
+
+
+//const char* ssid = "your_SSID";
+//const char* password = "your_password";
+
+const int buttonPin1 = D1;
+const int buttonPin2 = D2;
+
+WiFiClient client;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(buttonPin1, INPUT_PULLUP);
+  pinMode(buttonPin2, INPUT_PULLUP);
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("Connected to WiFi");
+}
+
+void loop() {
+  if (digitalRead(buttonPin1) == LOW) {
+    Serial.println("Button 1 pressed: Turning LED ON");
+    sendCommand("on");
+    delay(500);  // Debounce delay
+  }
+
+// Node MCU LED 
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+#include "secrets.h" // Include the secrets header file
+
+//const char* ssid = "your_SSID";
+//const char* password = "your_password";
+
+
+ESP8266WebServer server(80);
+
+const int ledPin = D2;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("Connected to WiFi");
+  
+  // Print the IP address
+  Serial.print("NodeMCU IP address: ");
+  Serial.println(WiFi.localIP());
+
+  server.on("/led", handleLED);
+  server.begin();
+  Serial.println("HTTP server started");
+}
+
+void loop() {
+  server.handleClient();
+}
+
+void handleLED() {
+  String state = server.arg("state");
+  Serial.println("Received command: " + state);
+  if (state == "on") {
+    digitalWrite(ledPin, HIGH);
+    server.send(200, "text/plain", "LED is ON");
+  } else if (state == "off") {
+    digitalWrite(ledPin, LOW);
+    server.send(200, "text/plain", "LED is OFF");
+  } else {
+    server.send(400, "text/plain", "Invalid command");
+  }
+}
+
+  if (digitalRead(buttonPin2) == LOW) {
+    Serial.println("Button 2 pressed: Turning LED OFF");
+    sendCommand("off");
+    delay(500);  // Debounce delay
+  }
+}
+
+void sendCommand(String command) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    String url = "http://192.168.0.52/led?state=" + command; // Replace with actual IP
+    Serial.println("Sending command to URL: " + url);
+    http.begin(client, url);
+    int httpCode = http.GET();
+    if (httpCode > 0) {
+      String payload = http.getString();
+      Serial.println("Response: " + payload);
+    } else {
+      Serial.printf("Error in HTTP request: %d\n", httpCode);
+    }
+    http.end();
+  } else {
+    Serial.println("WiFi not connected");
+  }
+}
+
+
+
+
